@@ -37,7 +37,10 @@ function commerce_product_limit_add_to_cart_validate($form, &$form_state) {
 	$product_id = intval($form_state['input']['product_id']);
 	if (!commerce_product_limit_ordered_qty($product_id, $qty)) {
 		$product = commerce_product_load($product_id);
-		form_set_error("edit-quantity", t('Could not add product "%title": maximum quantity that can be purchased is %max', array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value'])));
+		form_set_error("edit-quantity", t(
+			'Could not add product "%title": maximum quantity that can be purchased is %max',
+			array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
+		);
 	}
 }
 
@@ -46,11 +49,16 @@ function commerce_product_limit_add_to_cart_validate($form, &$form_state) {
  */
 function commerce_product_limit_orderlist_add_to_cart_validate($form, &$form_state) {
 	$items = $form_state['input']['qty'];
+	$pid;
 	
 	foreach($form_state['input']['qty'] as $product_id => $qty) {
-		if ($qty > 0 && !commerce_product_limit_ordered_qty($product_id, $qty)) {
-			$product = commerce_product_load($product_id);
-			form_set_error("edit-quantity", t('Could not add product "%title": maximum quantity that can be purchased is %max', array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value'])));
+		$pid = intval($product_id);
+		if ($qty > 0 && !commerce_product_limit_ordered_qty($pid,intval($qty))) {
+			$product = commerce_product_load($pid);
+			form_set_error("edit-quantity", t(
+				'Could not add product "%title": maximum quantity that can be purchased is %max',
+				array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
+			);
 		}
 	}
 }
@@ -64,7 +72,10 @@ function commerce_product_limit_option_validate($element, &$form_state) {
 
 	if (!commerce_product_limit_ordered_qty($product_id, $qty)) {
 		$product = commerce_product_load($product_id);
-		form_set_error("quantity", t('Could not add product "%title": maximum quantity that can be purchased is %max', array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value'])));
+		form_set_error("quantity",t(
+			'Could not add product "%title": maximum quantity that can be purchased is %max',
+			array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
+		);
 	}
 }
 
@@ -84,26 +95,37 @@ function commerce_product_limit_form_views_form_commerce_cart_form_default_alter
  * than allowed.
  */
 function commerce_product_limit_form_commerce_cart_validate($form, &$form_state) {
-	$line_item_index = array_keys($form_state['line_items']);
 	$deleted = array();
-	$error = false;
-	foreach ($form_state['input']['edit_quantity'] as $index => $qty) {
-		if(array_key_exists('delete-line-item-'.intval($index),$form_state['values'])) $deleted[] = $index;
+	$error = 0;
+	foreach (array_keys($form_state['input']['edit_quantity']) as $index) {
+		if(is_numeric($index) && array_key_exists('delete-line-item-'.intval($index),$form_state['values']))
+			$deleted[] = $index;
 	}
 	
-	foreach ($form_state['input']['edit_quantity'] as $index => $qty) {
+	$line_item_index = array_keys($form_state['line_items']);
+	foreach ($form_state['input']['edit_quantity'] as $index => $quantity) {
+		$qty = intval($quantity);
+		
 		$line_item = $form_state['line_items'][$line_item_index[$index]];
 		$line_item_wrapper = entity_metadata_wrapper('commerce_line_item', $line_item);
 		$product_id = $line_item_wrapper->commerce_product->product_id->value();
 		if (!commerce_product_limit_ordered_qty($product_id, $qty,$index,$deleted)) {
 			$product = commerce_product_load($product_id);
-			form_set_error("edit_quantity][$index", t('Maximum quantity of %title that can be purchased is %max', array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value'])));
-			$error = true;
+			form_set_error("edit_quantity][$index",t(
+				'Maximum quantity of %title that can be purchased is %max',
+				array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
+			);
+			$error++;
 		}
 	}
 	
-	if($error && count($deleted) > 0) {
-		form_set_error("commerce_product_limit", t('Your selected items have not been deleted, please correct the previous errors first'));
+	if($error > 0 && count($deleted) > 0) {
+		$err_mult = $error > 1 ? "s" : "";
+		$del_mult = count($deleted) > 1 ? " s have" : " has";
+		form_set_error("commerce_product_limit", t(
+			'Your selected item!del_mult not been deleted, please correct the previous error!err_mult first',
+			array('!err_mult' => $err_mult, '!del_mult' => $del_mult))
+		);
 	}
 }
 
