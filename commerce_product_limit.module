@@ -51,14 +51,16 @@ function commerce_product_limit_orderlist_add_to_cart_validate($form, &$form_sta
 	$items = $form_state['input']['qty'];
 	$pid;
 	
-	foreach($form_state['input']['qty'] as $product_id => $qty) {
-		$pid = intval($product_id);
-		if ($qty > 0 && !commerce_product_limit_ordered_qty($pid,intval($qty))) {
-			$product = commerce_product_load($pid);
-			form_set_error("edit-quantity", t(
-				'Could not add product "%title": maximum quantity that can be purchased is %max',
-				array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
-			);
+	foreach($form_state['input']['qty'] as $product) {
+		foreach($product as $product_id => $qty) {
+			$pid = intval($product_id);
+			if ($qty > 0 && !commerce_product_limit_ordered_qty($pid,intval($qty))) {
+				$product = commerce_product_load($pid);
+				form_set_error("edit-quantity", t(
+					'Could not add product "%title": maximum quantity that can be purchased is %max',
+					array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
+				);
+			}
 		}
 	}
 }
