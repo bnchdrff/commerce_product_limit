@@ -6,23 +6,25 @@
  */
 
 /**
- * Implement hook_enable()
+ * Implement hook_enable().
+ *
  * Adds the max_quantity field to all product types if not yet available
  */
 function commerce_product_limit_enable() {
-	$types = commerce_product_types();
-	foreach($types AS $name => $type) {
-		commerce_product_limit_configure_product_type($name);
-	}
+  $types = commerce_product_types();
+  foreach ($types as $name => $type) {
+    commerce_product_limit_configure_product_type($name);
+  }
 }
 
 /**
- * Implement hook_uninstall()
+ * Implement hook_uninstall().
+ *
  * Removes the max_quantity field and all data associated upon uninstall.
  */
 function commerce_product_limit_uninstall() {
-	$types = commerce_product_types();
-	foreach($types AS $name => $type) {
-		commerce_product_limit_cleanup_product_type($name);
-	}
+  $types = commerce_product_types();
+  foreach ($types as $name => $type) {
+    commerce_product_limit_cleanup_product_type($name);
+  }
 }

@@ -10,75 +10,84 @@
  *
  * Alters the add-to-cart form to add a validator.
  */
-function commerce_product_limit_form_alter(&$form, &$form_state, $form_id){
-	if (strpos($form_id, "commerce_cart_add_to_cart_form") === 0) {
-		$stock = array();
-		$stock_enabled = array();
-		// Check to see if product has options (multiple products using
-		// the default dropdown)
-		if(isset($form['product_id']['#options']) ){
-			$form['product_id']['#element_validate'][] = 'commerce_product_limit_option_validate';
-		}
-		// A single product or uses attributes (like colour & size).
-		else {
-			// Add validation to the add to cart
-			$form['#validate'][] = 'commerce_product_limit_add_to_cart_validate';
-		}
-	} elseif($form_id == 'commerce_cart_orderlist_add_to_cart') { 
-		$form['#validate'][] = 'commerce_product_limit_orderlist_add_to_cart_validate';
-	}
+function commerce_product_limit_form_alter(&$form, &$form_state, $form_id) {
+  if (strpos($form_id, "commerce_cart_add_to_cart_form") === 0) {
+    $stock = array();
+    $stock_enabled = array();
+    // Check to see if product has options (multiple products using
+    // the default dropdown).
+    if (isset($form['product_id']['#options'])) {
+      $form['product_id']['#element_validate'][] = 'commerce_product_limit_option_validate';
+    }
+    // A single product or uses attributes (like colour & size).
+    else {
+      // Add validation to the add to cart.
+      $form['#validate'][] = 'commerce_product_limit_add_to_cart_validate';
+    }
+  }
+  elseif ($form_id == 'commerce_cart_orderlist_add_to_cart') {
+    $form['#validate'][] = 'commerce_product_limit_orderlist_add_to_cart_validate';
+  }
 }
 
 /**
  * Form validate handler: validate "add to cart" form with one entry.
  */
 function commerce_product_limit_add_to_cart_validate($form, &$form_state) {
-	$qty = intval($form_state['input']['quantity']);
-	$product_id = intval($form_state['input']['product_id']);
-	if (!commerce_product_limit_ordered_qty($product_id, $qty)) {
-		$product = commerce_product_load($product_id);
-		form_set_error("edit-quantity", t(
-			'Could not add product "%title": maximum quantity that can be purchased is %max',
-			array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
-		);
-	}
+  $qty = intval($form_state['input']['quantity']);
+  $product_id = intval($form_state['input']['product_id']);
+  if (!commerce_product_limit_ordered_qty($product_id, $qty)) {
+    $product = commerce_product_load($product_id);
+    form_set_error("edit-quantity", t(
+        'Could not add product "%title": maximum quantity that can be purchased is %max',
+        array(
+          '%title' => $product->title,
+          '%max' => $product->commerce_product_limit_max['und'][0]['value']
+        ))
+    );
+  }
 }
 
 /**
  * Form validate handler: validate (unofficial) orderlist form.
  */
 function commerce_product_limit_orderlist_add_to_cart_validate($form, &$form_state) {
-	$items = $form_state['input']['qty'];
-	$pid;
-	
-	foreach($form_state['input']['qty'] as $product) {
-		foreach($product as $product_id => $qty) {
-			$pid = intval($product_id);
-			if ($qty > 0 && !commerce_product_limit_ordered_qty($pid,intval($qty))) {
-				$product = commerce_product_load($pid);
-				form_set_error("edit-quantity", t(
-					'Could not add product "%title": maximum quantity that can be purchased is %max',
-					array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
-				);
-			}
-		}
-	}
+  $items = $form_state['input']['qty'];
+
+  foreach ($form_state['input']['qty'] as $product) {
+    foreach ($product as $product_id => $qty) {
+      $pid = intval($product_id);
+      if ($qty > 0 && !commerce_product_limit_ordered_qty($pid, intval($qty))) {
+        $product = commerce_product_load($pid);
+        form_set_error("edit-quantity", t(
+            'Could not add product "%title": maximum quantity that can be purchased is %max',
+            array(
+              '%title' => $product->title,
+              '%max' => $product->commerce_product_limit_max['und'][0]['value']
+            ))
+        );
+      }
+    }
+  }
 }
 
 /**
  * Form validate handler: validate "add to cart" form with multiple entries.
  */
 function commerce_product_limit_option_validate($element, &$form_state) {
-	$product_id = intval($form_state['values']['product_id']);
-	$qty = intval($form_state['values']['quantity']);
+  $product_id = intval($form_state['values']['product_id']);
+  $qty = intval($form_state['values']['quantity']);
 
-	if (!commerce_product_limit_ordered_qty($product_id, $qty)) {
-		$product = commerce_product_load($product_id);
-		form_set_error("quantity",t(
-			'Could not add product "%title": maximum quantity that can be purchased is %max',
-			array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
-		);
-	}
+  if (!commerce_product_limit_ordered_qty($product_id, $qty)) {
+    $product = commerce_product_load($product_id);
+    form_set_error("quantity", t(
+        'Could not add product "%title": maximum quantity that can be purchased is %max',
+        array(
+          '%title' => $product->title,
+          '%max' => $product->commerce_product_limit_max['und'][0]['value']
+        ))
+    );
+  }
 }
 
 /**
@@ -87,7 +96,7 @@ function commerce_product_limit_option_validate($element, &$form_state) {
  * Alters the cart form to provide a validator for it.
  */
 function commerce_product_limit_form_views_form_commerce_cart_form_default_alter(&$form, &$form_state) {
-	$form['#validate'][] = 'commerce_product_limit_form_commerce_cart_validate';
+  $form['#validate'][] = 'commerce_product_limit_form_commerce_cart_validate';
 }
 
 /**
@@ -97,38 +106,42 @@ function commerce_product_limit_form_views_form_commerce_cart_form_default_alter
  * than allowed.
  */
 function commerce_product_limit_form_commerce_cart_validate($form, &$form_state) {
-	$deleted = array();
-	$error = 0;
-	foreach (array_keys($form_state['input']['edit_quantity']) as $index) {
-		if(is_numeric($index) && array_key_exists('delete-line-item-'.intval($index),$form_state['values']))
-			$deleted[] = $index;
-	}
-	
-	$line_item_index = array_keys($form_state['line_items']);
-	foreach ($form_state['input']['edit_quantity'] as $index => $quantity) {
-		$qty = intval($quantity);
-		
-		$line_item = $form_state['line_items'][$line_item_index[$index]];
-		$line_item_wrapper = entity_metadata_wrapper('commerce_line_item', $line_item);
-		$product_id = $line_item_wrapper->commerce_product->product_id->value();
-		if (!commerce_product_limit_ordered_qty($product_id, $qty,$index,$deleted)) {
-			$product = commerce_product_load($product_id);
-			form_set_error("edit_quantity][$index",t(
-				'Maximum quantity of %title that can be purchased is %max',
-				array('%title' => $product->title, '%max' => $product->commerce_product_limit_max['und'][0]['value']))
-			);
-			$error++;
-		}
-	}
-	
-	if($error > 0 && count($deleted) > 0) {
-		$err_mult = $error > 1 ? "s" : "";
-		$del_mult = count($deleted) > 1 ? " s have" : " has";
-		form_set_error("commerce_product_limit", t(
-			'Your selected item!del_mult not been deleted, please correct the previous error!err_mult first',
-			array('!err_mult' => $err_mult, '!del_mult' => $del_mult))
-		);
-	}
+  $deleted = array();
+  $error = 0;
+  foreach (array_keys($form_state['input']['edit_quantity']) as $index) {
+    if (is_numeric($index) && array_key_exists('delete-line-item-' . intval($index), $form_state['values'])) {
+      $deleted[] = $index;
+    }
+  }
+
+  $line_item_index = array_keys($form_state['line_items']);
+  foreach ($form_state['input']['edit_quantity'] as $index => $quantity) {
+    $qty = intval($quantity);
+
+    $line_item = $form_state['line_items'][$line_item_index[$index]];
+    $line_item_wrapper = entity_metadata_wrapper('commerce_line_item', $line_item);
+    $product_id = $line_item_wrapper->commerce_product->product_id->value();
+    if (!commerce_product_limit_ordered_qty($product_id, $qty, $index, $deleted)) {
+      $product = commerce_product_load($product_id);
+      form_set_error("edit_quantity][$index", t(
+          'Maximum quantity of %title that can be purchased is %max',
+          array(
+            '%title' => $product->title,
+            '%max' => $product->commerce_product_limit_max['und'][0]['value']
+          ))
+      );
+      $error++;
+    }
+  }
+
+  if ($error > 0 && count($deleted) > 0) {
+    $err_mult = $error > 1 ? "s" : "";
+    $del_mult = count($deleted) > 1 ? " s have" : " has";
+    form_set_error("commerce_product_limit", t(
+        'Your selected item!del_mult not been deleted, please correct the previous error!err_mult first',
+        array('!err_mult' => $err_mult, '!del_mult' => $del_mult))
+    );
+  }
 }
 
 
@@ -148,38 +161,42 @@ function commerce_product_limit_form_commerce_cart_validate($form, &$form_state)
  *   TRUE iff the ordered quantity is allowed
  *   FALSE otherwise.
  */
-function commerce_product_limit_ordered_qty($product_id ,$quantity,$index = -1,$deleted = array()) {
-	global $user;
-	$product = commerce_product_load($product_id);
-	if(!$product->commerce_product_limit_max ||
-	in_array($index,$deleted))
-		return true;
-	
-	$qty_max = intval($product->commerce_product_limit_max['und'][0]['value']);
-	if($qty_max > 0){
-		// Get line items from cart
-		$order = commerce_cart_order_load($user->uid);
-		if(is_object($order) && property_exists($order, 'commerce_line_item') &&
-				array_key_exists('und',$order->commerce_line_items)) {
-			foreach($order->commerce_line_items['und'] as $li_index => $line_item) { 
-				// Skip own line item and deleted ones
-				if($index == $li_index || in_array($li_index,$deleted)) continue;
-				$line_item_wrapper = entity_metadata_wrapper('commerce_line_item', $line_item['line_item_id']);
-				$li_product_id = $line_item_wrapper->commerce_product->product_id->value();
-				if($li_product_id == $product_id) {
-					$quantity += intval($line_item_wrapper->quantity->value());
-				}
-			}
-		}
-		return $quantity <= $qty_max;
-	}
-	return true;
+function commerce_product_limit_ordered_qty($product_id, $quantity, $index = -1, $deleted = array()) {
+  global $user;
+  $product = commerce_product_load($product_id);
+  if (!$product->commerce_product_limit_max ||
+    in_array($index, $deleted)) {
+    return TRUE;
+  }
+
+  $qty_max = intval($product->commerce_product_limit_max['und'][0]['value']);
+  if ($qty_max > 0) {
+    // Get line items from cart.
+    $order = commerce_cart_order_load($user->uid);
+    if (is_object($order) && property_exists($order, 'commerce_line_item') &&
+      array_key_exists('und', $order->commerce_line_items)) {
+      foreach ($order->commerce_line_items['und'] as $li_index => $line_item) {
+        // Skip own line item and deleted ones.
+        if ($index == $li_index || in_array($li_index, $deleted)) {
+          continue;
+        }
+        $line_item_wrapper = entity_metadata_wrapper('commerce_line_item', $line_item['line_item_id']);
+        $li_product_id = $line_item_wrapper->commerce_product->product_id->value();
+        if ($li_product_id == $product_id) {
+          $quantity += intval($line_item_wrapper->quantity->value());
+        }
+      }
+    }
+    return $quantity <= $qty_max;
+  }
+  return TRUE;
 }
+
 /**
  * Ensures a maximum order quantity field is present on a product type bundle.
  */
 function commerce_product_limit_configure_product_type($type) {
-	commerce_product_limit_create_instance('commerce_product_limit_max', 'number_integer', TRUE, 'commerce_product', $type, t('Maximum order quantity'));
+  commerce_product_limit_create_instance('commerce_product_limit_max', 'number_integer', TRUE, 'commerce_product', $type, t('Maximum order quantity'));
 }
 
 /**
@@ -199,72 +216,72 @@ function commerce_product_limit_configure_product_type($type) {
  *   The default weight of the field instance widget and display.
  */
 function commerce_product_limit_create_instance($field_name, $field_type, $required, $entity_type, $bundle, $label, $description = NULL, $weight = 0) {
-	// Look for or add the specified stock field to the requested entity bundle.
-	$field = field_info_field($field_name);
-	$instance = field_info_instance($entity_type, $field_name, $bundle);
+  // Look for or add the specified stock field to the requested entity bundle.
+  $field = field_info_field($field_name);
+  $instance = field_info_instance($entity_type, $field_name, $bundle);
 
-	if (empty($field)) {
-		$field = array(
-			'field_name' => $field_name,
-			'type' => $field_type,
-			'cardinality' => 1,
-			'entity_types' => array($entity_type),
-			'translatable' => FALSE,
-			'locked' => TRUE,
-		);
-		if ($field_type == 'list_boolean') {
-			$field['settings'] = array(
-				'allowed_values' => array(0, 1),
-				'allowed_values_function' => '',
-			);
-		}
-		$field = field_create_field($field);
-	}
+  if (empty($field)) {
+    $field = array(
+      'field_name' => $field_name,
+      'type' => $field_type,
+      'cardinality' => 1,
+      'entity_types' => array($entity_type),
+      'translatable' => FALSE,
+      'locked' => TRUE,
+    );
+    if ($field_type == 'list_boolean') {
+      $field['settings'] = array(
+        'allowed_values' => array(0, 1),
+        'allowed_values_function' => '',
+      );
+    }
+    $field = field_create_field($field);
+  }
 
-	if (empty($instance)) {
-		$instance = array(
-			'field_name' => $field_name,
-			'entity_type' => $entity_type,
-			'bundle' => $bundle,
-			'label' => $label,
-			'required' => $required,
-			'settings' => array(),
-			'display' => array(),
-			'description' => $description,
-			'default_value' => array( 0 ),
-		);
+  if (empty($instance)) {
+    $instance = array(
+      'field_name' => $field_name,
+      'entity_type' => $entity_type,
+      'bundle' => $bundle,
+      'label' => $label,
+      'required' => $required,
+      'settings' => array(),
+      'display' => array(),
+      'description' => $description,
+      'default_value' => array(0),
+    );
 
-		if ($field_type == 'list_boolean') {
-			$instance['widget'] = array(
-				'type' => 'options_onoff',
-				'settings' => array(
-					'display_label' => TRUE,
-				),
-			);
-		}
+    if ($field_type == 'list_boolean') {
+      $instance['widget'] = array(
+        'type' => 'options_onoff',
+        'settings' => array(
+          'display_label' => TRUE,
+        ),
+      );
+    }
 
-		$entity_info = entity_get_info($entity_type);
+    $entity_info = entity_get_info($entity_type);
 
-		// Spoof the default view mode so its display type is set.
-		$entity_info['view modes']['default'] = array();
+    // Spoof the default view mode so its display type is set.
+    $entity_info['view modes']['default'] = array();
 
-		field_create_instance($instance);
-	}
+    field_create_instance($instance);
+  }
 }
 
 /**
- * Clean-up the max limit field for a given bundle type (product type)
+ * Clean-up the max limit field for a given bundle type (product type).
  */
 function commerce_product_limit_cleanup_product_type($type) {
-	$instance = field_info_instance('commerce_product', 'commerce_product_limit_max', $type);
-	if(is_array($instance)) {
-		field_delete_instance($instance);
-	}
+  $instance = field_info_instance('commerce_product', 'commerce_product_limit_max', $type);
+  if (is_array($instance)) {
+    field_delete_instance($instance);
+  }
 }
 
 /**
- * Implement hook_commerce_product_type_insert()
+ * Implement hook_commerce_product_type_insert().
  */
 function commerce_product_limit_commerce_product_type_insert($type) {
-	commerce_product_limit_configure_product_type($type['type']);
+  commerce_product_limit_configure_product_type($type['type']);
 }
