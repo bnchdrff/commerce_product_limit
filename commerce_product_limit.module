@@ -159,7 +159,7 @@ function commerce_product_limit_ordered_qty($product_id ,$quantity,$index = -1,$
 	if($qty_max > 0){
 		// Get line items from cart
 		$order = commerce_cart_order_load($user->uid);
-		if(is_object($order) && property_exists($order, 'commerce_line_item') &&
+		if(is_object($order) && property_exists($order, 'commerce_line_items') &&
 				array_key_exists('und',$order->commerce_line_items)) {
 			foreach($order->commerce_line_items['und'] as $li_index => $line_item) { 
 				// Skip own line item and deleted ones
