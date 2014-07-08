@@ -193,6 +193,46 @@ function commerce_product_limit_ordered_qty($product_id, $quantity, $index = -1,
 }
 
 /**
+ * Implements hook_entity_presave().
+ *
+ * Check all line items in order for limits.
+ */
+function commerce_product_limit_entity_presave($entity, $type) {
+  if ($type == 'commerce_line_item') {
+    global $user;
+    $order_in_progress = &drupal_static(__FUNCTION__);
+    $order_id = commerce_cart_order_id($user->uid);
+
+    if ($order_id) {
+      // make recurisve children aware of our presence
+      $line_items = db_query(
+        "SELECT li.line_item_id, p.commerce_product_product_id FROM {commerce_line_item} li JOIN {field_data_commerce_product} p ON (p.entity_id = li.line_item_id) WHERE li.order_id = :order_id AND li.type = 'product'",
+        array(':order_id' => $order_id)
+      )->fetchAllKeyed();
+
+      if (!isset($order_in_progress) || $order_id !== $order_in_progress) {
+        $order_in_progress = $order_id;
+        foreach ($line_items as $line_item_id => $product_id) {
+          $line_item = commerce_line_item_load($line_item_id);
+          if (!commerce_product_limit_ordered_qty($product_id, $line_item->quantity)) {
+            $product = commerce_product_load($product_id);
+            $max_qty = $product->commerce_product_limit_max['und'][0]['value'];
+            $line_item->quantity = $max_qty;
+            commerce_line_item_save($line_item);
+            drupal_set_message(t('To order more than @max_qty @products, email @site_mail.', array(
+              '@product' => $product->title,
+              '@max_qty' => $max_qty,
+              '@site_mail' => variable_get('site_mail', ''),
+            )));
+            drupal_goto(current_path()); // @todo don't do this, and ensure this happens before page render, instead!
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
  * Ensures a maximum order quantity field is present on a product type bundle.
  */
 function commerce_product_limit_configure_product_type($type) {
