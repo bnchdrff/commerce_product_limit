@@ -216,7 +216,6 @@ function commerce_product_limit_entity_presave($entity, $type) {
         foreach ($line_items as $line_item_id => $product_id) {
           $line_item = commerce_line_item_load($line_item_id);
           if (commerce_product_limit_ordered_qty($product_id, intval($line_item->quantity), $index) != TRUE) {
-            xdebug_break();
             $product = commerce_product_load($product_id);
             $max_qty = $product->commerce_product_limit_max['und'][0]['value'];
             $line_item->quantity = $max_qty;
